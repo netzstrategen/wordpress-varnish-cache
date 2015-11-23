@@ -1,8 +1,8 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: Varnish HTTP Purge\n"
-"POT-Creation-Date: 2013-11-21 09:44-0800\n"
-"PO-Revision-Date: 2013-11-21 09:44-0800\n"
+"POT-Creation-Date: 2014-03-07 15:15-0800\n"
+"PO-Revision-Date: 2014-03-07 15:15-0800\n"
 "Last-Translator: \n"
 "Language-Team: DreamHost\n"
 "MIME-Version: 1.0\n"
@@ -13,32 +13,38 @@ msgstr ""
 "X-Poedit-Basepath: .\n"
 "X-Poedit-SearchPath-0: .\n"
 
-#: varnish-http-purge.php:54
+#: varnish-http-purge.php:68
 msgid "Varnish purge flushed!"
 msgstr ""
 
-#: varnish-http-purge.php:58
+#: varnish-http-purge.php:72
 msgid ""
 "Varnish HTTP Purge requires you to use custom permalinks. Please go to the "
 "<a href=\"options-permalink.php\">Permalinks Options Page</a> to configure "
 "them."
 msgstr ""
 
-#: varnish-http-purge.php:64
+#: varnish-http-purge.php:81 varnish-http-purge.php:118
+msgid "Purge Varnish"
+msgstr ""
+
+#: varnish-http-purge.php:90
 #, php-format
 msgid ""
 "<a href=\"%1$s\">Varnish HTTP Purge</a> automatically purges your posts when "
-"published or updated. Sometimes you need a manual flush. Press the button "
-"below to force it to purge your entire cache."
+"published or updated. Sometimes you need a manual flush."
 msgstr ""
 
-#: varnish-http-purge.php:65
-#, php-format
+#: varnish-http-purge.php:91
+msgid "Press the button below to force it to purge your entire cache."
+msgstr ""
+
+#: varnish-http-purge.php:93
+msgid "Purge Varnish Cache"
+msgstr ""
+
+#: varnish-http-purge.php:95
 msgid ""
-"<p class=\"button\"><a href=\"%1$s\"><strong>Purge Varnish Cache</strong></"
-"a></p>"
-msgstr ""
-
-#: varnish-http-purge.php:78
-msgid "Purge Varnish"
+"You do not have permission to purge the cache for the whole site. Please "
+"contact your adminstrator."
 msgstr ""
