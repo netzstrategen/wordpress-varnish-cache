@@ -1,6 +1,6 @@
 <?php
 /*
-Plugin Name: Varnish HTTP Purge
+Plugin Name: Varnish HTTP Purge (fixed)
 Plugin URI: http://wordpress.org/extend/plugins/varnish-http-purge/
 Description: Sends HTTP PURGE requests to URLs of changed posts/pages when they are modified.
 Version: 3.7.3
@@ -42,6 +42,7 @@ class VarnishPurger {
 		foreach ($this->getRegisterEvents() as $event) {
 			add_action( $event, array($this, 'purgePost'), 10, 2 );
 		}
+		add_action( 'wp_update_attachment_metadata', array($this, 'purgeAttachmentMeta'), 50, 2 );
 		add_action( 'shutdown', array($this, 'executePurge') );
 
 		if ( isset($_GET['vhp_flush_all']) && check_admin_referer('varnish-http-purge') ) {
@@ -137,14 +138,13 @@ class VarnishPurger {
 	protected function purgeUrl($url) {
 		// Parse the URL for proxy proxies
 		$p = parse_url($url);
-
+		$headers = array();
 
 		if ( isset($p['query']) && ( $p['query'] == 'vhp-regex' ) ) {
 			$pregex = '.*';
-			$varnish_x_purgemethod = 'regex';
+			$headers['X-Purge-Method'] = 'regex';
 		} else {
 			$pregex = '';
-			$varnish_x_purgemethod = 'default';
 		}
 
 		// Build a varniship
@@ -181,7 +181,21 @@ class VarnishPurger {
 
 		// Cleanup CURL functions to be wp_remote_request and thus better
 		// http://wordpress.org/support/topic/incompatability-with-editorial-calendar-plugin
-		wp_remote_request($purgeme, array('method' => 'PURGE', 'headers' => array( 'host' => $p['host'], 'X-Purge-Method' => $varnish_x_purgemethod ) ) );
+		wp_remote_request($purgeme, $d = array('method' => 'PURGE', 'headers' => array( 'Host' => $p['host'] ) + $headers ) );
+		// curl -v -X PURGE -H 'Host: n-land.de' -H 'X-Purge-Method: regex' 'http://185.34.185.16/.*'
+		/*
+		$log = '';
+		static $first = TRUE;
+		if ($first) {
+			$log .= "\n--- [" . date('Y-m-d H:i:s') . "] ---\n";
+			$first = FALSE;
+		}
+		$log .= $d['method'] . ' ' . $purgeme . "\n";
+		foreach ($d['headers'] as $key => $value) {
+			$log .= "$key: $value\n";
+		}
+		file_put_contents(dirname(dirname(__DIR__)) . '/uploads/varnish.log', $log, FILE_APPEND);
+		*/
 
 		do_action('after_purge_url', $url, $purgeme);
 	}
@@ -190,12 +204,8 @@ class VarnishPurger {
 
 		// If this is a valid post we want to purge the post, the home page and any associated tags & cats
 		// If not, purge everything on the site.
-
-		$validPostStatus = array("publish", "trash");
-		$thisPostStatus  = get_post_status($postId);
-
 		// If this is a revision, stop.
-		if( get_permalink($postId) !== true && !in_array($thisPostStatus, $validPostStatus) ) {
+		if( get_permalink($postId) === false ) {
 			return;
 		} else {
 			// array to collect all our URLs
@@ -261,6 +271,20 @@ class VarnishPurger {
         // @param array $purgeUrls the urls (paths) to be purged
         // @param int $postId the id of the new/edited post
         $this->purgeUrls = apply_filters( 'vhp_purge_urls', $this->purgeUrls, $postId );
+	}
+
+	public function purgeAttachmentMeta($data, $postId) {
+		if (!empty($data['file'])) {
+			$baseurl = wp_upload_dir();
+			$baseurl = $baseurl['baseurl'];
+			$this->purgeUrls[] = $baseurl . '/' . $data['file'];
+			if (isset($data['sizes'])) {
+				foreach ($data['sizes'] as $size) {
+					$this->purgeUrls[] = $baseurl . '/' . dirname($data['file']) . '/' . $size['file'];
+				}
+			}
+		}
+		return $data;
 	}
 
 }
