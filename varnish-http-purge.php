@@ -211,18 +211,17 @@ class VarnishPurger {
 			// array to collect all our URLs
 			$listofurls = array();
 
-			// Category purge based on Donnacha's work in WP Super Cache
-			$categories = get_the_category($postId);
-			if ( $categories ) {
-				foreach ($categories as $cat) {
-					array_push($listofurls, get_category_link( $cat->term_id ) );
-				}
-			}
-			// Tag purge based on Donnacha's work in WP Super Cache
-			$tags = get_the_tags($postId);
-			if ( $tags ) {
-				foreach ($tags as $tag) {
-					array_push($listofurls, get_tag_link( $tag->term_id ) );
+			// All associated terms (categories, tags, custom taxonomies).
+			foreach (wp_get_object_terms($postId, get_taxonomies()) as $term) {
+				$term_link = get_term_link($term);
+				$listofurls[] = $term_link;
+				$listofurls[] = $term_link . '/feed';
+				// Walk up the hierarchy, if there is one.
+				while ($term->parent) {
+					$term = get_term($term->parent, $term->taxonomy);
+					$term_link = get_term_link($term);
+					$listofurls[] = $term_link;
+					$listofurls[] = $term_link . '/feed';
 				}
 			}
 
