@@ -3,7 +3,7 @@
 Plugin Name: Varnish HTTP Purge (fixed)
 Plugin URI: http://wordpress.org/extend/plugins/varnish-http-purge/
 Description: Sends HTTP PURGE requests to URLs of changed posts/pages when they are modified.
-Version: 3.7.3
+Version: 3.7.4-netz
 Author: Mika Epstein
 Author URI: http://halfelf.org/
 License: http://www.apache.org/licenses/LICENSE-2.0
@@ -148,7 +148,7 @@ class VarnishPurger {
 		}
 
 		// Build a varniship
-		if ( VHP_VARNISH_IP != false ) {
+		if ( VHP_VARNISH_IP ) {
 			$varniship = VHP_VARNISH_IP;
 		} else {
 			$varniship = get_option('vhp_varnish_ip');
@@ -181,7 +181,7 @@ class VarnishPurger {
 
 		// Cleanup CURL functions to be wp_remote_request and thus better
 		// http://wordpress.org/support/topic/incompatability-with-editorial-calendar-plugin
-		wp_remote_request($purgeme, $d = array('method' => 'PURGE', 'headers' => array( 'Host' => $p['host'] ) + $headers ) );
+		$response = wp_remote_request($purgeme, $d = array('method' => 'PURGE', 'headers' => array( 'Host' => $p['host'] ) + $headers ) );
 		// curl -v -X PURGE -H 'Host: n-land.de' -H 'X-Purge-Method: regex' 'http://185.34.185.16/.*'
 		/*
 		$log = '';
@@ -194,6 +194,7 @@ class VarnishPurger {
 		foreach ($d['headers'] as $key => $value) {
 			$log .= "$key: $value\n";
 		}
+		#$log .= var_export($response, TRUE);
 		file_put_contents(dirname(dirname(__DIR__)) . '/uploads/varnish.log', $log, FILE_APPEND);
 		*/
 
