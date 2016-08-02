@@ -26,13 +26,22 @@ Original Author: Leon Weidauer ( http:/www.lnwdr.de/ )
 */
 
 class VarnishPurger {
+	private static $instance;
+
 	protected $purgeUrls = array();
 
-	public function __construct() {
+	private function __construct() {
 		defined('varnish-http-purge') ||define('varnish-http-purge', true);
 		defined('VHP_VARNISH_IP') || define('VHP_VARNISH_IP', false );
 		add_action( 'init', array( &$this, 'init' ) );
 		add_action( 'activity_box_end', array( $this, 'varnish_rightnow' ), 100 );
+	}
+
+	public static function getInstance() {
+		if (!isset(static::$instance)) {
+			static::$instance = new static();
+		}
+		return static::$instance;
 	}
 
 	public function init() {
@@ -289,4 +298,4 @@ class VarnishPurger {
 
 }
 
-$purger = new VarnishPurger();
+VarnishPurger::getInstance();
