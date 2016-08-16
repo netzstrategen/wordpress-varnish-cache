@@ -144,7 +144,7 @@ class VarnishPurger {
 		}
 	}
 
-	protected function purgeUrl($url) {
+	public function purgeUrl($url) {
 		// Parse the URL for proxy proxies
 		$p = parse_url($url);
 		$headers = array();
