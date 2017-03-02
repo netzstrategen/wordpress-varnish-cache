@@ -130,30 +130,24 @@ class VarnishPurger {
 	}
 
 	public function executePurge() {
-		$purgeUrls = array_unique($this->purgeUrls);
-
-		if (empty($purgeUrls)) {
+		if (empty($this->purgeUrls)) {
 			if ( isset($_GET['vhp_flush_all']) && current_user_can('manage_options') && check_admin_referer('varnish-http-purge') ) {
-				$this->purgeUrl( home_url() .'/?vhp-regex' );
-			   // wp_cache_flush();
+				$this->purgeUrl(home_url('/.*'), TRUE);
 			}
 		} else {
-			foreach($purgeUrls as $url) {
-				$this->purgeUrl($url);
+			foreach ($this->purgeUrls as $url => $is_regex) {
+				$this->purgeUrl($url, $is_regex);
 			}
 		}
 	}
 
-	public function purgeUrl($url) {
+	public function purgeUrl($url, $is_regex = FALSE) {
 		// Parse the URL for proxy proxies
 		$p = parse_url($url);
 		$headers = array();
 
-		if ( isset($p['query']) && ( $p['query'] == 'vhp-regex' ) ) {
-			$pregex = '.*';
+		if ($is_regex) {
 			$headers['X-Purge-Method'] = 'regex';
-		} else {
-			$pregex = '';
 		}
 
 		// Build a varniship
@@ -183,29 +177,31 @@ class VarnishPurger {
 
 		// If we made varniship, let it sail
 		if ( isset($varniship) && $varniship != null ) {
-			$purgeme = $schema.$varniship.$path.$pregex;
+			$purgeme = $schema . $varniship . $path;
 		} else {
-			$purgeme = $schema.$p['host'].$path.$pregex;
+			$purgeme = $schema . $p['host'] . $path;
 		}
 
 		// Cleanup CURL functions to be wp_remote_request and thus better
 		// http://wordpress.org/support/topic/incompatability-with-editorial-calendar-plugin
 		$response = wp_remote_request($purgeme, $d = array('method' => 'PURGE', 'headers' => array( 'Host' => $p['host'] ) + $headers ) );
 		// curl -v -X PURGE -H 'Host: n-land.de' -H 'X-Purge-Method: regex' 'http://185.34.185.16/.*'
-		/*
-		$log = '';
-		static $first = TRUE;
-		if ($first) {
-			$log .= "\n--- [" . date('Y-m-d H:i:s') . "] ---\n";
-			$first = FALSE;
+
+		if (defined('VARNISH_DEBUG_LOG') && VARNISH_DEBUG_LOG) {
+			static $first = TRUE;
+
+			$log = '';
+			if ($first) {
+				$log .= "\n--- [" . date('Y-m-d H:i:s') . "] ---\n";
+				$first = FALSE;
+			}
+			$log .= $d['method'] . ' ' . $purgeme . "\n";
+			foreach ($d['headers'] as $key => $value) {
+				$log .= "$key: $value\n";
+			}
+			#$log .= var_export($response, TRUE);
+			file_put_contents(wp_upload_dir()['basedir'] . '/varnish.log', $log, FILE_APPEND);
 		}
-		$log .= $d['method'] . ' ' . $purgeme . "\n";
-		foreach ($d['headers'] as $key => $value) {
-			$log .= "$key: $value\n";
-		}
-		#$log .= var_export($response, TRUE);
-		file_put_contents(dirname(dirname(__DIR__)) . '/uploads/varnish.log', $log, FILE_APPEND);
-		*/
 
 		do_action('after_purge_url', $url, $purgeme);
 	}
@@ -218,78 +214,77 @@ class VarnishPurger {
 		if( get_permalink($postId) === false ) {
 			return;
 		} else {
-			// array to collect all our URLs
-			$listofurls = array();
-
 			// All associated terms (categories, tags, custom taxonomies).
 			foreach (wp_get_object_terms($postId, get_taxonomies()) as $term) {
 				$term_link = get_term_link($term);
-				$listofurls[] = $term_link;
-				$listofurls[] = $term_link . '/feed';
+				$this->purgeUrls[$term_link] = FALSE;
+				$this->purgeUrls[$term_link . '/.*'] = TRUE;
+				$this->purgeUrls[$term_link . '/feed'] = FALSE;
+
 				// Walk up the hierarchy, if there is one.
 				while ($term->parent) {
 					$term = get_term($term->parent, $term->taxonomy);
 					$term_link = get_term_link($term);
-					$listofurls[] = $term_link;
-					$listofurls[] = $term_link . '/feed';
+					$this->purgeUrls[$term_link] = FALSE;
+					$this->purgeUrls[$term_link . '/.*'] = TRUE;
+					$this->purgeUrls[$term_link . '/feed'] = FALSE;
 				}
 			}
 
 			// Author URL
-			array_push($listofurls,
-				get_author_posts_url( get_post_field( 'post_author', $postId ) ),
-				get_author_feed_link( get_post_field( 'post_author', $postId ) )
-			);
+			$this->purgeUrls[get_author_posts_url(get_post_field('post_author', $postId))] = FALSE;
+			$this->purgeUrls[get_author_feed_link(get_post_field('post_author', $postId))] = FALSE;
 
 			// Archives and their feeds
-			$archiveurls = array();
 			if ( get_post_type_archive_link( get_post_type( $postId ) ) == true ) {
-				array_push($listofurls,
-					get_post_type_archive_link( get_post_type( $postId ) ),
-					get_post_type_archive_feed_link( get_post_type( $postId ) )
-				);
+				$this->purgeUrls[get_post_type_archive_link(get_post_type($postId))] = FALSE;
+				$this->purgeUrls[get_post_type_archive_feed_link(get_post_type($postId))] = FALSE;
 			}
 
 			// Post URL
-			array_push($listofurls, get_permalink($postId) );
+			$this->purgeUrls[get_permalink($postId)] = FALSE;
 
 			// Feeds
-			array_push($listofurls,
-				get_bloginfo_rss('rdf_url') ,
-				get_bloginfo_rss('rss_url') ,
-				get_bloginfo_rss('rss2_url'),
-				get_bloginfo_rss('atom_url'),
-				get_bloginfo_rss('comments_rss2_url'),
-				get_post_comments_feed_link($postId)
-			);
+			$this->purgeUrls[get_bloginfo_rss('rdf_url')] = FALSE;
+			$this->purgeUrls[get_bloginfo_rss('rss_url')] = FALSE;
+			$this->purgeUrls[get_bloginfo_rss('rss2_url')] = FALSE;
+			$this->purgeUrls[get_bloginfo_rss('atom_url')] = FALSE;
+			$this->purgeUrls[get_bloginfo_rss('comments_rss2_url')] = FALSE;
+			$this->purgeUrls[get_post_comments_feed_link($postId)] = FALSE;
 
 			// Home Page and (if used) posts page
-			array_push($listofurls, home_url('/') );
+			$this->purgeUrls[home_url('/')] = FALSE;
+
 			if ( get_option('show_on_front') == 'page' ) {
-				array_push($listofurls, get_permalink( get_option('page_for_posts') ) );
+				$this->purgeUrls[get_permalink(get_option('page_for_posts'))] = FALSE;
 			}
-
-			// Now flush all the URLs we've collected
-			foreach ($listofurls as $url) {
-				array_push($this->purgeUrls, $url ) ;
-			}
-
 		}
 
-        // Filter to add or remove urls to the array of purged urls
-        // @param array $purgeUrls the urls (paths) to be purged
-        // @param int $postId the id of the new/edited post
-        $this->purgeUrls = apply_filters( 'vhp_purge_urls', $this->purgeUrls, $postId );
+		// Filter to add or remove urls to the array of purged urls
+		// @param array $purgeUrls the urls (paths) to be purged
+		// @param int $postId the id of the new/edited post
+		$purgeUrls = $this->purgeUrls;
+		$this->purgeUrls = apply_filters( 'vhp_purge_urls', $this->purgeUrls, $postId );
+
+		// Upgrade legacy URLs, if any.
+		if ($this->purgeUrls !== $purgeUrls) {
+			foreach ($this->purgeUrls as $url => $is_regex) {
+				if (is_string($is_regex)) {
+					unset($this->purgeUrls[$url]);
+					$this->purgeUrls[$is_regex] = FALSE;
+				}
+			}
+		}
 	}
 
 	public function purgeAttachmentMeta($data, $postId) {
 		if (!empty($data['file'])) {
 			$baseurl = wp_upload_dir();
 			$baseurl = $baseurl['baseurl'];
-			$this->purgeUrls[] = $baseurl . '/' . $data['file'];
+			$this->purgeUrls[$baseurl . '/' . $data['file']] = FALSE;
 			if (isset($data['sizes'])) {
 				foreach ($data['sizes'] as $size) {
-					$this->purgeUrls[] = $baseurl . '/' . dirname($data['file']) . '/' . $size['file'];
+					$this->purgeUrls[$baseurl . '/' . dirname($data['file']) . '/' . $size['file']] = FALSE;
 				}
 			}
 		}
