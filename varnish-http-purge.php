@@ -216,6 +216,8 @@ class VarnishPurger {
 		} else {
 			// Post URL
 			$this->purgeUrls[get_permalink($postId)] = FALSE;
+			// Post pagination, feeds, and other attached URLs.
+			$this->purgeUrls[get_permalink($postId) . '/.*'] = TRUE;
 
 			// All associated terms (categories, tags, custom taxonomies).
 			foreach (wp_get_object_terms($postId, get_taxonomies(['public' => TRUE])) as $term) {
