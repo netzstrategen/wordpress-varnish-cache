@@ -214,11 +214,14 @@ class VarnishPurger {
 		if( get_permalink($postId) === false ) {
 			return;
 		} else {
+			// Post URL
+			$this->purgeUrls[get_permalink($postId)] = FALSE;
+
 			// All associated terms (categories, tags, custom taxonomies).
-			foreach (wp_get_object_terms($postId, get_taxonomies()) as $term) {
+			foreach (wp_get_object_terms($postId, get_taxonomies(['public' => TRUE])) as $term) {
 				$term_link = get_term_link($term);
 				$this->purgeUrls[$term_link] = FALSE;
-				$this->purgeUrls[$term_link . '/.*'] = TRUE;
+				$this->purgeUrls[$term_link . '/page/.*'] = TRUE;
 				$this->purgeUrls[$term_link . '/feed'] = FALSE;
 
 				// Walk up the hierarchy, if there is one.
@@ -226,28 +229,30 @@ class VarnishPurger {
 					$term = get_term($term->parent, $term->taxonomy);
 					$term_link = get_term_link($term);
 					$this->purgeUrls[$term_link] = FALSE;
-					$this->purgeUrls[$term_link . '/.*'] = TRUE;
+					$this->purgeUrls[$term_link . '/page/.*'] = TRUE;
 					$this->purgeUrls[$term_link . '/feed'] = FALSE;
 				}
 			}
 
 			// Author URL
-			$this->purgeUrls[get_author_posts_url(get_post_field('post_author', $postId))] = FALSE;
-			$this->purgeUrls[get_author_feed_link(get_post_field('post_author', $postId))] = FALSE;
+			$author_id = get_post_field('post_author', $postId);
+			$this->purgeUrls[$author_url = get_author_posts_url($author_id)] = FALSE;
+			$this->purgeUrls[$author_url . '/page/.*'] = TRUE;
+			$this->purgeUrls[get_author_feed_link($author_id)] = FALSE;
 
 			// Archives and their feeds
-			if ( get_post_type_archive_link( get_post_type( $postId ) ) == true ) {
-				$this->purgeUrls[get_post_type_archive_link(get_post_type($postId))] = FALSE;
-				$this->purgeUrls[get_post_type_archive_feed_link(get_post_type($postId))] = FALSE;
+			$post_type = get_post_type($postId);
+			if ($post_type_archive_url = get_post_type_archive_link($post_type)) {
+				$this->purgeUrls[$post_type_archive_url] = FALSE;
+				$this->purgeUrls[$post_type_archive_url . '/page/.*'] = TRUE;
+				$this->purgeUrls[$post_type_archive_url . '/feed'] = FALSE;
+				$this->purgeUrls[get_post_type_archive_feed_link($post_type)] = FALSE;
 			}
 
-			// Post URL
-			$this->purgeUrls[get_permalink($postId)] = FALSE;
-
 			// Feeds
+			$this->purgeUrls[get_bloginfo_rss('rss2_url')] = FALSE;
 			$this->purgeUrls[get_bloginfo_rss('rdf_url')] = FALSE;
 			$this->purgeUrls[get_bloginfo_rss('rss_url')] = FALSE;
-			$this->purgeUrls[get_bloginfo_rss('rss2_url')] = FALSE;
 			$this->purgeUrls[get_bloginfo_rss('atom_url')] = FALSE;
 			$this->purgeUrls[get_bloginfo_rss('comments_rss2_url')] = FALSE;
 			$this->purgeUrls[get_post_comments_feed_link($postId)] = FALSE;
