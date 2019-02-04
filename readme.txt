@@ -1,233 +1,195 @@
-=== Varnish HTTP Purge ===
-Contributors: techpriester, Ipstenu, DH-Shredder
-Tags: varnish, purge, cache
+=== Varnish ===
+Contributors: netzstrategen, tha_sun, techpriester, Ipstenu, DH-Shredder
+Tags: varnish, cache, proxy, reverse-proxy, purge, ban, performance, speed, PageSpeed, caching
 Requires at least: 4.0
-Tested up to: 4.3
-Stable tag: 3.7.3
+Tested up to: 4.9
+Stable tag: 1.0.0
 
-Purge Varnish Cache when post content on your site is modified.
+Integrates the Varnish Cache with WordPress.
 
 == Description ==
-Varnish HTTP Purge sends a PURGE request to the URL of a page or post every time it it modified. This occurs when editing, publishing, commenting or deleting an item, and when changing themes.
 
-<a href="https://www.varnish-cache.org/">Varnish</a> is a web application accelerator also known as a caching HTTP reverse proxy. You install it in front of any server that speaks HTTP and configure it to cache the contents. This plugin <em>does not</em> install Varnish for you, nor does it configure Varnish for WordPress. It's expected you already did that on your own.
+This plugin enables persistent caching of all content in Varnish with a very
+long lifetime (TTL) while still publishing new and changed content sooner.
 
-Not all pages are purged every time, depending on your Varnish configuration. When a post, page, or custom post type is edited, or a new comment is added, <em>only</em> the following pages will purge:
+When creating or editing a post, WordPress notifies Varnish by issuing PURGE
+(BAN) requests to remove all of the post's associated URLs from the cache, so
+that they will be refetched from the (WordPress) backend when they are requested
+again:
 
-* The front page
-* The post/page edited
-* Any categories or tags associated with the page
+- The post's own page URL, pagination, and comment feed
+- Listing pages of all public terms (categories including their parents, tags,
+  etc) associated with the post
+- Listing pages of the post's author
+- Site-wide feeds
+- The site's frontpage
 
-In addition, your entire cache will be purged on the following actions:
+<a href="https://www.varnish-cache.org/">Varnish</a> is a web application
+accelerator also known as a caching HTTP reverse proxy. You install it in front
+of your website and configure it to cache its contents. This plugin does not
+install Varnish for you, nor does it configure Varnish for WordPress.
 
-* <del>Changing permalinks</del>
-* Changing themes
-* Press the 'Purge Varnish Cache' button on the dashboard
-* Press the 'Purge Varnish' button on the toolbar
+Site administrators are able to manually purge all content in Varnish using a
+button in the admin bar. On a multisite network, only network/super admins are
+able to purge manually.
 
-Please note: On a multisite network using subfolders, only the <strong>network admins</strong> can purge the main site.
+This plugin is actively used by major publishing websites with millions of
+published posts and thus considered mature enough to be used in production.
+However, patches and improvements are always welcome,
+<a href="https://github.com/netzstrategen/wordpress-varnish">development happens
+on GitHub</a>.
 
-= The future ... =
-
-We're going to sit down and look into how the plugin is structured to make it even faster and more organized. Please send coffee. Here's the wish list:
-
-* Only purge all automatically once an hour (manual button click will continue to work)
-* Refactor automated purge all to be kinder
-* Reorganize code for sanity
-* Get rid of the need to parse_url()
 
 == Installation ==
-No WordPress configuration needed.
 
-When used on Multisite, the plugin is Network Activatable Only.
+1. Install and activate the plugin as usual.
+
+2. Configure the IP address and optionally port of your Varnish server in the
+   `VARNISH_HOST` constant in your `wp-config.php`:
+   ```
+   const VARNISH_HOST = 'http://127.0.0.1:8080';
+   ```
+
 
 = Requirements =
-* Pretty Permalinks enabled
-* Varnish 3.x or higher
 
-= Languages =
-Until the WordPress Language Pack system is deployable, I'm storing them <a href="https://github.com/Ipstenu/varnish-http-purge">on Github</a> for now.
+* PHP 7.0 or later.
+* Varnish 3.x or later.
+* Pretty Permalinks.
 
-= Varnish Config Best Practices =
-
-<em>Coming Soon</em>
 
 == Frequently Asked Questions ==
 
-= What version of Varnish is supported? =
+= What versions of Varnish are supported? =
 
-This was built and tested on Varnish 3.x, however it is reported to work on 2.x and 4.x. It is only supported on v3 at this time.
+Every version above Varnish 3.
 
-= Why doesn't every page flush when I make a new post? =
 
-The only pages that should purge are the post's page, the front page, categories, and tags. The reason why is a little philosophical.
+= Why doesn't every page refresh when I make a new post? =
 
-When building out this plugin, there were a couple pathways on how best to handle purging caches and they boiled down to two: Decisions (the plugin purges what it purges when it purges) and Options (you decide what to purge, when and why). It's entirely possible to make this plugin purge everything, every time a 'trigger' happens, have it purge some things, or have it be so you can pick that purges.
+Only relevant URLs are selectively invalidated in the cache in order to serve
+all other existing pages as quickly as possible and avoid slow response times
+and a high load on the webserver whenever content changes.
 
-In the interests of design, we decided that the KISS principle was key. Since you can configure your Varnish to always purge all pages recursively (i.e. purging http://example.com/ would purge all pages below it), if that's a requirement, you can set it yourself. There are also other Varnish plugins that allow for more granular control (including W3 Total Cache), however this plugin will not be gaining a whole bunch of options to handle that.
+The only way to improve this in the future would be to implement full support
+for Varnish Cache Tags. However, this would have to be supported from the entire
+application (WordPress Core) to work flawlessly. (See Drupal 8+ or the ambitious
+<a href="https://wordpress.org/plugins/pantheon-advanced-page-cache/">Pantheon Advanced Page Cache</a>
+for an example of such efforts.)
 
-= Why doesn't my cache purge when I edit my theme? =
+However, a simplified "flush all upon any change" option would be possible and
+could be added if there is sufficient interest.
 
-Because the plugin only purges your <em>content</em> when you edit it. That means if you edit a page/post, or someone leaves a comment, it'll change. Otherwise, you have to purge the whole cache. The plugin will do this for you if you ''change'' your theme, but not when you edit your theme.
 
-That said, if you use Jetpack's CSS editor, it will purge the whole cache for your site on save.
+= Why are my theme changes not visible? =
+
+Only content that is updated through the WordPress application causes relevant
+URLs to be purged in the Varnish cache.
+
+After changing code or doing anything else outside of WordPress API functions
+you need to manually purge all affected content from the cache. You may use the
+links to flush all content in the administration to do so.
+
+Alternatively, use the following command to purge only files in your theme:
+
+```
+curl -X PURGE -H 'Host: example.com' -H 'X-Purge-Method: regex' 'http://127.0.0.1/wp-content/themes/mytheme/.*'
+```
+
 
 = How do I manually purge the whole cache? =
 
-Click the 'Purge Varnish Cache' button on the "Right Now" Dashboard (see the screenshot if you can't find it).
+As a user with administrator privileges, you can click the button "Purge Varnish
+Cache" button in the admin toolbar or on the administrative dashboard.
 
-There's also a "Purge Varnish" button on the admin toolbar.
+If you do not see these buttons, you do not have sufficient privileges.
 
-= I don't see a button! =
+In a multisite installation, only network/super administrators are able to
+manually purge the full cache, as that affects all sites in the cache.
 
-Are you using Multisite? Are you on the main site on the network? You know, the one in example.com? And are you using subfolders?
 
-Only the multisite <em>network</em> admins can purge that site, because on a subfolder network if you flush the site at example.com, then everything under that (like example.com/site1 and example.com/siten and everything else) would also get flushed. That means that a purge on the main site purges the entire network.
+= Can I use this with a CDN or proxy service like CloudFlare? =
 
-I don't know about you, but I don't want my random site-admins to be able to do that. So to mitigate that, only the network admins can purge everything on the main site of a subfolder network.
+Yes, but when you use CloudFlare or similar services, you have a proxy server in
+front of the Varnish cache, which is a (reverse) proxy on its own. Ensure to
+set the proper IP address of your Varnish cache (and not the one of the CDN) in
+your wp-config.php.
 
-= Why is nothing caching when I use PageSpeed? =
 
-Because PageSpeed likes to put in Caching headers to say <em>not</em> to cache. To fix this, you need to put this in your .htaccess section for PageSpeed: `ModPagespeedModifyCachingHeaders off`
+= How do I find my Varnish IP address? =
 
-If you're using nginx, it's `pagespeed ModifyCachingHeaders off;`
+The IP addresses from which Varnish can be purged are configured in your VCL,
+check the configuration for e.g. `acl purge`.
 
-= Can I use this with a proxy service like CloudFlare? =
+If your Varnish server listens to multiple IPs, pick the private IP address that
+can be accessed from the network of your webserver.
 
-Yes, but you'll need to make some additonal changes (see "Why aren't my changes showing when I use CloudFlare or another proxy?" below).
+Also make sure to include the port (unless Varnish listens on 80), for example:
+```
+const VARNISH_HOST = 'http://127.0.0.1:8080';
+```
 
-= Why aren't my changes showing when I use CloudFlare or another proxy? =
 
-When you use CloudFlare or any other similar servive, you've got a proxy in front of the Varnish proxy. In general this isn't a bad thing. The problem arises when the DNS shenanigans send the purge request to your domainname. When you've got an additional proxy like CloudFlare, you don't want the request to go to the proxy, you want it to go to Varnish server.
+= How do I configure my Varnish VCL? =
 
-To fix this, add the following to your wp-config.php file:
+Support on configuring Varnish is not provided by this plugin. Please contact
+your hosting provider instead.
 
-`define('VHP_VARNISH_IP','123.45.67.89');`
+Your Varnish configuration must support PURGE/BAN requests. Helpful examples may
+be contributed and found in the
+<a href="https://github.com/netzstrategen/wordpress-varnish/wiki">Varnish Plugin Wiki</a>.
 
-Replace "123.45.67.89" with the IP of your <em>Varnish Server</em> (not CloudFlare, Varnish). <em>DO NOT</em> put in http in this define.
 
-You can also set the option `vhp_varnish_ip` in the database. This will NOT take precedence over the define, it's just there to let hosts who are using something like wp-cli do this for you in an automated fashion:
+= How does this plugin differ from Proxy Cache Purge / varnish-http-purge? =
 
-`wp option add vhp_varnish_ip 123.45.67.89`
+_Proxy Cache Purge/Varnish HTTP Purge_ was authored for the masses and attempts
+to support users on-screen with basic setup questions, and thus carries a lot of
+unnecessary weight for a performance plugin that is supposed to make your site
+faster (but unnecessary features make it slower). In addition, the plugin's code
+and architecture was never overhauled and modernized for standards and
+performance.
 
-and
+The Varnish plugin follows a different approach and focuses on performance only.
 
-`wp option update vhp_varnish_ip 123.45.67.890`
+Ultimately, the goal is to hide the whole infrastructure scaling problem away
+from the users. The button(s) to manually purge the cache are unwanted and can
+hopefully be removed soon.
 
-= How do I find my Varnish IP? =
-
-Your Varnish IP must be one of the IPs that Varnish is listening on. If you use multiple IPs, or if you've customized your ACLs, you'll need to pick on that doesn't conflict with your other settings. For example, if you have Varnish listening on a public and private IP, you'll want to pick the private. On the other hand, if you told Varnish to listen on 0.0.0.0 (i.e. "listen on every interface you can") you would need to check what IP you set your purge ACL to allow (commonly 127.0.0.1 aka localhost), and use that (i.e. 127.0.0.1).
-
-If your webhost set up Varnish for you, you may need to ask them for the specifics if they don't have it documented. I've listed the ones I know about here, however you should still check with them if you're not sure.
-
-<ul>
-    <li><strong>DreamHost</strong> - If you're using DreamPress and Cloudflare, go into the Panel and click on the DNS settings for the domain. The entry for <em>resolve-to.domain</em> is your varnish server: `resolve-to.www A 208.97.157.172` -- If you're <em>NOT</em> using Cloudflare, you don't need it, but it's just your normal IP.</li>
-</ul>
-
-= What if I have multiple varnish IPs? =
-
-Right now it's not supported. I have a major issue with writing code I don't use, which means that since I'm only using one IP right now, I don't want to be on the ball for supporting multiple IPs. I don't even have a place to test is, which is just insane to attempt to code if you think about it. Yes, I could accept pull requests, but that means everyone's at some other person's discretion. So no, I won't be doing that at this time.
-
-= Why don't my gzip'd pages flush? =
-
-Make sure your Varnish VCL is configured correctly to purge all the right pages. This is normally an issue with Varnish 2, which is not supported.
-
-= Why isn't the whole cache purge working? =
-
-The plugin sends a PURGE command of <code>/.*</code> and `X-Purge-Method` in the header with a value of regex. If your Varnish server doesn't doesn't understand the wildcard, you can configure it to check for the header.
-
-= How do I configure my VCL? =
-
-This is a question beyond the support of plugin. I don't offer any Varnish Config help due to resources. I will say this, you absolutely must have PURGE set up in your VCL. This is still supported in Varnish v3, though may not be set up by default. Also, here are some links to other people who use this plugin and have made public their VCLs:
-
-* <a href="https://github.com/dreamhost/varnish-vcl-collection">DreamHost's Varnish VCL Collection</a>
-
-All of these VCLs work with this plugin.
 
 == Changelog ==
 
-= 3.7.3 = 
-* Add varnish_http_purge_schema filter for changing the default schema. The default remains http (even if you set your home and/or site URL to https) because of sanity, but in order to support some edge cases, they can filter if they want. (props Drumba)
+= 1.0.0 =
+Refactored the plugin code inherited from varnish-http-purge to establish a
+modern and fast plugin architecture.
 
-= 3.7.2 = 
-* Revisions were being mishandled and purging all inappropriately. (props Cha0sgr)
+API changes:
 
-= 3.7.1 =
-* Archives weren't purging. (props Ingraye)
+* Constant `VHP_VARNISH_IP` in wp-config.php has been renamed to `VARNISH_HOST`
+  and includes the protocol/schema and optionally port now:
+```diff
+-const VHP_VARNISH_IP = '127.0.0.1';
++const VARNISH_HOST = 'http://127.0.0.1:8080';
+```
 
-= 3.7 =
-* Optimizing flushes.
-* Add filter to allow other people to hook in when 3rd party plugins are abjectly weird (props jnachtigall)
+* Filter 'varnish_http_purge_schema' has been removed.
 
-= 3.6 =
-* Making purge be http only, since Varnish doesn't support https. This will prevent other issues for people using SSL with Varnish (though goodness knows why...)
-* Forcing backslash on home_url. Why WP doesn't, I have no idea, but this will help sites not running regex.
+* Filter 'vhp_purge_urls' has been renamed to 'varnish/purge/post':
+```diff
+-add_filter('vhp_purge_urls', ...)
++add_filter('varnish/purge/post', ...)
+```
 
-= 3.5.1 =
-* Language fix
-* Using add_query_arg
-* Ignore revisions
+* Class VarnishPurger no longer exists; use the appropriate filters to purge
+  further URLs instead (or create PRs to suggest new integration points).
 
-= 3.5 =
-* Isset wrap for URL path and query which may not be set in rare conditions (props <a href="https://wordpress.org/support/topic/undefined-index-notices-4">hsz</a>)
-* Added in flushing for feeds (requested by <a href="https://wordpress.org/support/topic/feed-not-purged">heypete</a>)
+* Action 'after_purge_url' has been renamed:
+```diff
+-add_action('after_purge_url', ...);
++add_action('varnish/purge-url/after', ...);
+```
 
-= 3.4 =
-* Multisite support
-* Button in toolbar
-* Fix define message in debug mode
-* Better parsing for if you set the define in the DB or config.
 
-= 3.3.4 =
-* Rollback. Sorry.
-
-= 3.3.3 =
-* Per request of Jetpack team, added in a <code>wp_cache_flush()</code> call when manually purging. This should only impact server side PHP caches (APC, Memcached etc)
-
-= 3.3.2 =
-* Varnish IP was too persnickity in PHP 5.4 (added in an 'and if not null' check - props <a href="http://wordpress.org/support/topic/patch-a-little-patch-to-purge-on-comment-posting">colinleroy</a>)
-
-= 3.3.1 =
-* Language Pack fixing.
-
-= 3.3 =
-* Quick and dirty fix for a plugin that is causing the URLs to purge <em>ALL THE TIME</em>
-
-= 3.2 =
-* Correcting conflict with host's default config.
-
-= 3.1 =
-* Refactoring Cleanup (otherwise known as Copy/Pasta error in variable name). (props Shredder)
-
-= 3.0 =
-* Adds 'Purge Varnish' button
-* More selective purging, to account for different server setups
-* Tighened up what purges and when
-* Flushing categories and tags (per code from WP Super Cache, thanks!)
-* Clarify requirements (Varnish and Pretty Permalinks)
-
-= 2.3 =
-* Purge images on deletion
-* Fix for a VarnishIP when behind proxy servers not working on all hosts (props Berler)
-
-= 2.2.1 =
-* typo (hit . instead of / - Props John B. Manos)
-
-= 2.2 =
-* Added in workaround for Varnish purge reqs going AWOL when another proxy server is in place. (props to Shredder and Berler)
-* Cache flushes when you change themes
-
-= 2.1 =
-* Header Image
-
-= 2.0 =
-* Commit access handed to Ipstenu
-* Changed CURL to wp_remote_request (thank you <a href="http://wordpress.org/support/topic/incompatability-with-editorial-calendar-plugin?replies=1">Kenn Wilson</a>) so we don't have to do <a href="http://wordpress.org/support/topic/plugin-varnish-http-purge-incompatibility-with-woocommerce?replies=6">CURLOPT_RETURNTRANSFER</a> Remember kids, CURL is okay, but wp_remote_request is more better.
-
-= 1.2.0 =
-* Moved actual request execution to "shutdown" event
-* Removed GET request due to bad performance impact
-
-== Screenshots ==
-
-1. What the button looks like
+The varnish-cache plugin was originally forked from
+<a href="https://wordpress.org/plugins/varnish-http-purge/">varnish-http-purge</a>
+v3.7.3 in 2015. Credits go to the original authors for the initial integration
+ideas.
