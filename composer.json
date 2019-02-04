@@ -1,0 +1,19 @@
+{
+    "name": "netzstrategen/varnish",
+    "type": "wordpress-plugin",
+    "authors": [
+        {
+            "name": "netzstrategen",
+            "email": "hallo@netzstrategen.com",
+            "homepage": "https://netzstrategen.com"
+        }
+    ],
+    "dist": {
+        "url": "git@github.com:netzstrategen/wordpress-varnish.git",
+        "type": "git"
+    },
+    "require": {
+        "php": ">=7.0.0",
+        "composer/installers": "^1"
+    }
+}
