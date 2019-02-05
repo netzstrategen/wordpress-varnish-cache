@@ -62,8 +62,17 @@ class Plugin {
    *   The ID of the post to purge.
    */
   public static function purgePost($postId) {
+    // Skip the following save condiitons:
+    // - post revisions and auto-saves (rare cases)
+    // - auto-drafts (new posts immediately created when accessing /wp-admin/post-new.php)
+    // - auto-saves after entering a post title (DOING_AUTOSAVE)
+    // - not yet published posts without slug (having an internal ?p=12345 permalink)
+    $post = get_post($postId);
+    if (!$post || wp_is_post_revision($post) || wp_is_post_autosave($post) || $post->post_status === 'auto-draft' || (defined('DOING_AUTOSAVE') && DOING_AUTOSAVE) || empty($post->post_name)) {
+      return;
+    }
+    // Skip posts without permalink.
     $permalink = get_permalink($postId);
-    // Skip post revisions.
     if ($permalink === FALSE) {
       return;
     }
