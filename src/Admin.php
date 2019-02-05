@@ -26,10 +26,6 @@ class Admin {
       add_action('admin_notices', __CLASS__ . '::admin_notices_permalinks');
     }
 
-    // Output manual purge button in admin bar.
-    if (static::hasPurgeAccess()) {
-      add_action('admin_bar_menu', __CLASS__ . '::admin_bar_menu', 100);
-    }
     // Output manual purge button on admin dashboard.
     add_action('activity_box_end', __CLASS__ . '::activity_box_end', 100);
   }
@@ -68,20 +64,6 @@ class Admin {
    */
   public static function admin_notices_permalinks() {
     echo '<div class="error"><p>' . __('Varnish requires custom permalinks. Please go to the <a href="options-permalink.php">Permalinks Options Page</a> to configure them.', Plugin::L10N) . '</p></div>';
-  }
-
-  /**
-   * @implements admin_bar_menu
-   */
-  public static function admin_bar_menu($admin_bar) {
-    $admin_bar->add_menu([
-      'id' => 'purge-varnish-cache-all',
-      'title' => __('Purge Varnish', Plugin::L10N),
-      'href' => wp_nonce_url(add_query_arg('varnish_flush_all', 1), Plugin::PREFIX),
-      'meta' => [
-        'title' => __('Purge Varnish', Plugin::L10N),
-      ],
-    ]);
   }
 
   /**
