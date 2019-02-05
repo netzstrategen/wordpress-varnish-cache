@@ -30,8 +30,8 @@ of your website and configure it to cache its contents. This plugin does not
 install Varnish for you, nor does it configure Varnish for WordPress.
 
 Site administrators are able to manually purge all content in Varnish using a
-button in the admin bar. On a multisite network, only network/super admins are
-able to purge manually.
+button in the admin dashboard. On a multisite network, only network/super admins
+are able to purge manually.
 
 This plugin is actively used by major publishing websites with millions of
 published posts and thus considered mature enough to be used in production.
@@ -99,10 +99,10 @@ curl -X PURGE -H 'Host: example.com' -H 'X-Purge-Method: regex' 'http://127.0.0.
 
 = How do I manually purge the whole cache? =
 
-As a user with administrator privileges, you can click the button "Purge Varnish
-Cache" button in the admin toolbar or on the administrative dashboard.
+As a user with administrator privileges, you can click the button "Manually
+flush cache" button on the administrative dashboard.
 
-If you do not see these buttons, you do not have sufficient privileges.
+If you do not see the button, you do not have sufficient privileges.
 
 In a multisite installation, only network/super administrators are able to
 manually purge the full cache, as that affects all sites in the cache.
