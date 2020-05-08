@@ -39,8 +39,11 @@ class Varnish {
     if (defined('VARNISH_HOST')) {
       $varnish_purge_url = rtrim(VARNISH_HOST, '/') . $path;
     }
-    else {
+    elseif (isset($url_parts['host'])) {
       $varnish_purge_url = 'http://' . $url_parts['host'] . $path;
+    }
+    else {
+      return;
     }
 
     $request_options = [
