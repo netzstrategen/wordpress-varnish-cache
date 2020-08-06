@@ -48,7 +48,7 @@ class Plugin {
     add_action('edit_post', __CLASS__ . '::purgePost', 10, 2);
     add_action('delete_attachment', __CLASS__ . '::purgePost', 10, 2);
 
-    add_action('wp_generate_attachment_metadata', __CLASS__ . '::purgeAttachmentMeta', 50, 2);
+    add_action('wp_update_attachment_metadata', __CLASS__ . '::purgeAttachmentMeta', 50, 2);
 
     add_action('switch_theme', __CLASS__ . '::purgeAll');
 
@@ -143,13 +143,11 @@ class Plugin {
    *   The ID of the post the media file is attached to.
    */
   public static function purgeAttachmentMeta($attachment, $postId) {
-    $uploaddir = wp_upload_dir();
     if (get_post_mime_type($postId) === 'application/pdf') {
-      $attachment['file'] = strtr(get_attached_file($postId), [
-        $uploaddir['basedir'] . '/' => '',
-      ]);
+      $attachment = wp_get_attachment_metadata($postId);
     }
     if (!empty($attachment['file'])) {
+      $uploaddir = wp_upload_dir();
       $baseurl = $uploaddir['baseurl'];
       Varnish::$purgeUrls[$baseurl . '/' . $attachment['file']] = FALSE;
       if (isset($attachment['sizes'])) {
