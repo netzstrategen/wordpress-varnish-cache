@@ -147,8 +147,8 @@ class Plugin {
       $attachment = wp_get_attachment_metadata($postId);
     }
     if (!empty($attachment['file'])) {
-      $uploaddir = wp_upload_dir();
-      $baseurl = $uploaddir['baseurl'];
+      $baseurl = wp_upload_dir();
+      $baseurl = $baseurl['baseurl'];
       Varnish::$purgeUrls[$baseurl . '/' . $attachment['file']] = FALSE;
       if (isset($attachment['sizes'])) {
         foreach ($attachment['sizes'] as $size) {
