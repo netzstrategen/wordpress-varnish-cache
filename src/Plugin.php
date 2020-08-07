@@ -137,14 +137,22 @@ class Plugin {
   /**
    * Registers the updated media file and its derivative image sizes for purging.
    *
+   * Since the file key is added to image attachments only, ensure to register
+   * remaining mime types and possible preview images for purging.
+   *
    * @param array $attachment
    *   The data of the attachment to purge.
    * @param int $postId
    *   The ID of the post the media file is attached to.
+   *
+   * @see wp_generate_attachment_metadata()
    */
   public static function purgeAttachmentMeta($attachment, $postId) {
-    if (get_post_mime_type($postId) === 'application/pdf') {
-      $attachment = wp_get_attachment_metadata($postId);
+    if (empty($attachment['file'])) {
+      $attachment = (array) wp_get_attachment_metadata($postId);
+      if (!isset($attachment['file'])) {
+        $attachment['file'] = _wp_relative_upload_path(get_attached_file($postId));
+      }
     }
     if (!empty($attachment['file'])) {
       $baseurl = wp_upload_dir();
