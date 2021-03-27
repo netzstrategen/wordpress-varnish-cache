@@ -221,13 +221,17 @@ class Plugin {
    * @implements gform_after_save_form
    */
   public static function gform_after_save_form($form, $is_new) {
+    if ($is_new) {
+      return;
+    }
     global $wpdb;
-    $search_term = '%' . '[gravityform id="' . $form['id'] . '"%';
+    $search_term = '([[]gravityform id=)(?:\\\\\\\\)?"' . $form['id'] . '(?:\\\\\\\\)?"';
+    $search_term .= '|wp\:gravityforms\/form {"formId":"' . $form['id'] . '"';
     $target_pages = $wpdb->get_col("
       SELECT p.ID FROM {$wpdb->posts} p
       WHERE p.post_type IN ('page','post')
         AND p.post_status = 'publish'
-        AND p.post_content LIKE '{$search_term}';
+        AND p.post_content REGEXP '{$search_term}';
     ");
     foreach ($target_pages as $id) {
       static::purgePost($id);
