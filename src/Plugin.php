@@ -50,6 +50,9 @@ class Plugin {
 
     add_action('wp_update_attachment_metadata', __CLASS__ . '::purgeAttachmentMeta', 50, 2);
 
+    // Invalidate all pages containing a gravityform upon saving.
+    add_filter('gform_after_save_form', __CLASS__ . '::gform_after_save_form', 10, 2);
+
     add_action('switch_theme', __CLASS__ . '::purgeAll');
 
     add_action('shutdown', __CLASS__ . '::executePurge');
@@ -211,6 +214,33 @@ class Plugin {
    */
   public static function getBasePath() {
     return dirname(__DIR__);
+  }
+
+  /**
+   * Invalidate all pages containing a gravityform upon saving.
+   *
+   * @implements gform_after_save_form
+   */
+  public static function gform_after_save_form($form, $is_new) {
+    if ($is_new) {
+      return;
+    }
+    global $wpdb;
+    // Matches:
+    //   [gravityform id=\"48\"
+    //   <!-- wp:html --> [gravityform id="48"
+    //   <!-- wp:gravityforms/form {"formId":"48","formPreview":false}
+    $search_term = '([[]gravityform id=)(?:\\\\\\\\)?"' . $form['id'] . '(?:\\\\\\\\)?"';
+    $search_term .= '|wp\:gravityforms\/form {"formId":"' . $form['id'] . '"';
+    $target_pages = $wpdb->get_col("
+      SELECT p.ID FROM {$wpdb->posts} p
+      WHERE p.post_type IN ('page', 'post')
+        AND p.post_status = 'publish'
+        AND p.post_content REGEXP '{$search_term}';
+    ");
+    foreach ($target_pages as $id) {
+      static::purgePost($id);
+    }
   }
 
 }
