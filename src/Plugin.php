@@ -50,12 +50,12 @@ class Plugin {
 
     add_action('wp_update_attachment_metadata', __CLASS__ . '::purgeAttachmentMeta', 50, 2);
 
+    // Invalidate all pages containing a gravityform upon saving.
+    add_filter('gform_after_save_form', __CLASS__ . '::gform_after_save_form', 10, 2);
+
     add_action('switch_theme', __CLASS__ . '::purgeAll');
 
     add_action('shutdown', __CLASS__ . '::executePurge');
-
-    // Invalidate all pages containing a gravityform upon saving.
-    add_filter('gform_after_save_form', __CLASS__ . '::gform_after_save_form', 10, 2);
   }
 
   /**
