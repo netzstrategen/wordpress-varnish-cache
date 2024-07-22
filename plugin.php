@@ -3,7 +3,7 @@
 /*
   Plugin Name: Varnish Cache
   Plugin URI: https://wordpress.org/plugins/varnish-cache/
-  Version: 1.0.1
+  Version: 1.0.2
   Text Domain: varnish-cache
   Network: true
   Description: Integrates the Varnish Cache with WordPress.

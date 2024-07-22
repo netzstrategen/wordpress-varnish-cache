@@ -3,7 +3,7 @@ Contributors: netzstrategen, tha_sun, techpriester, Ipstenu, DH-Shredder
 Tags: varnish, cache, proxy, reverse-proxy, purge, ban, performance, speed, PageSpeed, caching
 Requires at least: 4.0
 Tested up to: 4.9
-Stable tag: 1.0.1
+Stable tag: 1.0.2
 
 Integrates the Varnish Cache with WordPress.
 
