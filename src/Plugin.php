@@ -53,6 +53,8 @@ class Plugin {
     // Invalidate all pages containing a gravityform upon saving.
     add_filter('gform_after_save_form', __CLASS__ . '::gform_after_save_form', 10, 2);
 
+    Elementor::init();
+
     add_action('switch_theme', __CLASS__ . '::purgeAll');
 
     add_action('shutdown', __CLASS__ . '::executePurge');
