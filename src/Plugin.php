@@ -75,7 +75,10 @@ class Plugin {
     // Post URL.
     Varnish::$purgeUrls[$permalink] = FALSE;
     // Post pagination, feeds, and other attached URLs.
-    Varnish::$purgeUrls[$permalink . '/.*'] = TRUE;
+    $show_on_front = get_option('show_on_front');
+    if ($show_on_front === 'page' && $postId !== (int) get_option('page_on_front')) {
+      Varnish::$purgeUrls[$permalink . '/.*'] = TRUE;
+    }
 
     // All associated public terms (categories, tags, custom taxonomies).
     foreach (wp_get_object_terms($postId, get_taxonomies(['public' => TRUE])) as $term) {
@@ -118,10 +121,10 @@ class Plugin {
     Varnish::$purgeUrls[get_post_comments_feed_link($postId)] = FALSE;
 
     // Frontpage (posts page).
-    Varnish::$purgeUrls[home_url('/')] = FALSE;
+    Varnish::$purgeUrls[site_url()] = FALSE;
 
-    if (get_option('show_on_front') === 'page') {
-      Varnish::$purgeUrls[get_permalink(get_option('page_for_posts'))] = FALSE;
+    if ($show_on_front === 'page' && ($page_for_posts = get_option('page_for_posts')) && ($posts_url = get_permalink($page_for_posts))) {
+      Varnish::$purgeUrls[$posts_url] = FALSE;
     }
 
     /**
