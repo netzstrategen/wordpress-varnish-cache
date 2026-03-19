@@ -43,9 +43,8 @@ class Plugin {
    */
   public static function init() {
     add_action('save_post', __CLASS__ . '::purgePost', 10, 2);
-    add_action('deleted_post', __CLASS__ . '::purgePost', 10, 2);
     add_action('trashed_post', __CLASS__ . '::purgePost', 10, 2);
-    add_action('edit_post', __CLASS__ . '::purgePost', 10, 2);
+    add_action('deleted_post', __CLASS__ . '::purgePost', 10, 2);
     add_action('delete_attachment', __CLASS__ . '::purgePost', 10, 2);
 
     add_action('wp_update_attachment_metadata', __CLASS__ . '::purgeAttachmentMeta', 50, 2);
