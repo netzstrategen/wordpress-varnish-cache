@@ -67,9 +67,10 @@ class Plugin {
    *   The ID of the post to purge.
    */
   public static function purgePost($postId) {
+    $post_type = get_post_type($postId);
     $permalink = get_permalink($postId);
     // Skip post revisions.
-    if ($permalink === FALSE) {
+    if ($post_type === 'revision' || $permalink === FALSE) {
       return;
     }
     // Post URL.
@@ -102,7 +103,6 @@ class Plugin {
     Varnish::$purgeUrls[get_author_feed_link($author_id)] = FALSE;
 
     // Post type archive and feed.
-    $post_type = get_post_type($postId);
     if ($post_type_archive_url = get_post_type_archive_link($post_type)) {
       Varnish::$purgeUrls[$post_type_archive_url] = FALSE;
       Varnish::$purgeUrls[$post_type_archive_url . '/page/.*'] = TRUE;
