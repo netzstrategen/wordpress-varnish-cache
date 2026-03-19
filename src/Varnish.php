@@ -38,7 +38,7 @@ class Varnish {
 
     if (defined('VARNISH_HOST')) {
       $varnish_purge_url = rtrim(VARNISH_HOST, '/') . $path;
-      $host = get_site_url();
+      $host = defined('VARNISH_PROXY_HOST') ? VARNISH_PROXY_HOST : get_site_url();
       $url_parts = parse_url($host);
     }
     elseif (isset($url_parts['host'])) {
