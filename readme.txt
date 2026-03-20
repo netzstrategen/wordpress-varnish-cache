@@ -50,6 +50,18 @@ on GitHub</a>.
    const VARNISH_HOST = 'http://127.0.0.1:8080';
    ```
 
+3. Optional: Configure an internal proxy domain on which Varnish receives requests
+   in `wp-config.php`:
+   ```
+   const VARNISH_PROXY_HOST = 'https://internal-proxy.example.com';
+   ```
+
+4. Optional: Enable logging of Varnish purges (in `/wp-content/uploads/varnish.log`)
+   in `wp-config.php`:
+   ```
+   const VARNISH_DEBUG_LOG = true;
+   ```
+
 
 = Requirements =
 
