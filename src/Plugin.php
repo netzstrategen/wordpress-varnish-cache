@@ -47,6 +47,12 @@ class Plugin {
     add_action('deleted_post', __CLASS__ . '::purgePost', 10, 2);
     add_action('delete_attachment', __CLASS__ . '::purgePost', 10, 2);
 
+    // Purge cache when a post's term relationships change. Taxonomy-only
+    // updates (e.g. status transitions) never trigger save_post, so they would
+    // otherwise leave stale pages in the cache.
+    add_action('set_object_terms', __CLASS__ . '::set_object_terms', 10, 6);
+    add_action('deleted_term_relationships', __CLASS__ . '::deleted_term_relationships', 10, 3);
+
     add_action('wp_update_attachment_metadata', __CLASS__ . '::purgeAttachmentMeta', 50, 2);
 
     // Invalidate all pages containing a gravityform upon saving.
@@ -139,6 +145,38 @@ class Plugin {
      * @since 4.0.0
      */
     Varnish::$purgeUrls = apply_filters('varnish/purge/post', Varnish::$purgeUrls, $postId);
+  }
+
+  /**
+   * Purges a post's cached pages when its term relationships are updated.
+   *
+   * Replaces ($append = false) are detected by comparing the full old and new
+   * term taxonomy ID sets. Append operations are treated as a change whenever
+   * at least one term taxonomy ID is newly added.
+   *
+   * @implements set_object_terms
+   */
+  public static function set_object_terms($object_id, $terms, $tt_ids, $taxonomy, $append, $old_tt_ids) {
+    $new_ids = (array) $tt_ids;
+    $prev_ids = (array) $old_tt_ids;
+    sort($new_ids);
+    sort($prev_ids);
+    if (!$append && $new_ids === $prev_ids) {
+      return;
+    }
+    if ($append && empty(array_diff($new_ids, $prev_ids))) {
+      return;
+    }
+    static::purgePost($object_id);
+  }
+
+  /**
+   * Purges a post's cached pages when its term relationships are deleted.
+   *
+   * @implements deleted_term_relationships
+   */
+  public static function deleted_term_relationships($object_id, $tt_ids, $taxonomy) {
+    static::purgePost($object_id);
   }
 
   /**
