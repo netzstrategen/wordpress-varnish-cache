@@ -57,6 +57,17 @@ class Varnish {
      $response = wp_remote_request($varnish_purge_url, $request_options);
      // curl -v -X PURGE -H 'Host: example.com' -H 'X-Purge-Method: regex' 'http://127.0.0.1/.*'
 
+     // A purge that does not reach Varnish leaves the stale page in place and
+     // the next visitor sees outdated content with nothing pointing at the
+     // cause. Report it unconditionally; VARNISH_DEBUG_LOG below stays opt-in
+     // for the full request trace.
+     if (is_wp_error($response)) {
+       error_log(sprintf('Varnish: PURGE %s failed: %s', $varnish_purge_url, $response->get_error_message()));
+     }
+     elseif (($status_code = wp_remote_retrieve_response_code($response)) >= 400) {
+       error_log(sprintf('Varnish: PURGE %s returned HTTP %s.', $varnish_purge_url, $status_code));
+     }
+
      if (defined('VARNISH_DEBUG_LOG') && VARNISH_DEBUG_LOG) {
        static $first = TRUE;
 
