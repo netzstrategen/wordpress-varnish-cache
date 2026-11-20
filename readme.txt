@@ -56,7 +56,14 @@ on GitHub</a>.
    const VARNISH_PROXY_HOST = 'https://internal-proxy.example.com';
    ```
 
-4. Optional: Enable logging of Varnish purges (in `/wp-content/uploads/varnish.log`)
+4. Optional: If a proxy serves the site in a subfolder and strips that subfolder
+   before requests reach Varnish, configure the stripped path prefix in
+   `wp-config.php`, so that purges match the URLs cached by Varnish:
+   ```
+   const VARNISH_PROXY_PATH = '/shop';
+   ```
+
+5. Optional: Enable logging of Varnish purges (in `/wp-content/uploads/varnish.log`)
    in `wp-config.php`:
    ```
    const VARNISH_DEBUG_LOG = true;
@@ -65,7 +72,7 @@ on GitHub</a>.
 
 = Requirements =
 
-* PHP 7.0 or later.
+* PHP 8.4 or later.
 * Varnish 3.x or later.
 * Pretty Permalinks.
 

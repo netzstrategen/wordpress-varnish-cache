@@ -36,6 +36,16 @@ class Varnish {
     $url_parts = parse_url($url);
     $path = $url_parts['path'] ?? '';
 
+    // A proxy that serves the site in a subfolder may strip that subfolder
+    // before requests reach Varnish, so cached objects are stored without it
+    // and a purge for the public path would not match anything.
+    if (defined('VARNISH_PROXY_PATH') && VARNISH_PROXY_PATH !== '') {
+      $prefix = rtrim(VARNISH_PROXY_PATH, '/');
+      if ($path === $prefix || str_starts_with($path, $prefix . '/')) {
+        $path = '/' . ltrim(substr($path, strlen($prefix)), '/');
+      }
+    }
+
     if (defined('VARNISH_HOST')) {
       $varnish_purge_url = rtrim(VARNISH_HOST, '/') . $path;
       $host = defined('VARNISH_PROXY_HOST') ? VARNISH_PROXY_HOST : get_site_url();
